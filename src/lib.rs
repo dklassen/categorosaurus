@@ -2,6 +2,7 @@ use std::{
     collections::{HashMap, VecDeque},
     error::Error,
 };
+use log::info;
 
 pub type PatternMap = HashMap<String, String>;
 

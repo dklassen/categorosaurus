@@ -5,3 +5,5 @@ edition = "2021"
 authors = ["dklassen"]
 
 [dependencies]
+"test-log"   = "0.2.17"
+"log"        = "0.4.14"
