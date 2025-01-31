@@ -1,6 +1,6 @@
 ## 🦖 Categorosaurus
 
-Categorosaurus is a simple library for classifying text based on user-supplied partial patterns and labels. It allows you to define categories using regex patterns and efficiently match text against them. The library is pretty lightweight at the moment patterns are limited to partial matches and the longest match wins.
+Categorosaurus is a simple library for classifying text based on user-supplied partial patterns and labels. It allows you to define categories using partial string patterns and efficiently match text against them. The library is pretty lightweight at the moment patterns are limited to partial matches and the longest match wins.
 
 ### Disclaimer
 This at the moment was for run to play with implementing the Aho-Corasick algorithm in Rust. It is not intended for production use. I wanted to test an idea about having to classify short text labels manually.
