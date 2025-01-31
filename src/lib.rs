@@ -60,7 +60,7 @@ impl LabelMaker {
         Ok(())
     }
 
-    pub fn categorize(mut self, text: &str) -> Option<String> {
+    pub fn categorize(&self, text: &str) -> Option<String> {
         if !self._failure_links_built {
             panic!("Failure links not built yet. Call finalize() first.");
         }
@@ -88,7 +88,7 @@ impl LabelMaker {
     }
 
 
-    fn _build_failure_links(&mut self) {
+    pub fn finalize(&mut self) {
         let root_ptr: *mut Node = &mut *self.root;
         let mut queue = VecDeque::new();
 
