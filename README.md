@@ -2,6 +2,7 @@
 
 Categorosaurus is a simple library for classifying text based on user-supplied partial patterns and labels. It allows you to define categories using partial string patterns and efficiently match text against them. The library is pretty lightweight at the moment patterns are limited to partial matches and the longest match wins.
 
+
 ### Disclaimer
 This at the moment was for run to play with implementing the Aho-Corasick algorithm in Rust. It is not intended for production use. I wanted to test an idea about having to classify short text labels manually.
 
@@ -33,6 +34,7 @@ fn main() {
     let mut category= LabelMaker::new();
     labeler.insert("rawr", "Sad Noise").unwrap();
     labeler.insert("rawrs", "Fossils Are Cool!").unwrap();
+    labeler.finalize();
 
     // Classify text
     let text = "The dinosaur that rawrs.";
@@ -43,7 +45,7 @@ fn main() {
 ```
 
 Output:
-Category: ["greeting"]
+Category: ["Fossils Are Cool!"]
 
 ### 📖 API Reference
 

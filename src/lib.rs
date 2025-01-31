@@ -1,7 +1,9 @@
 use std::{
-    collections::VecDeque,
+    collections::{HashMap, VecDeque},
     error::Error,
 };
+
+pub type PatternMap = HashMap<String, String>;
 
 struct Node {
     children: [Option<Box<Node>>; 256],
@@ -30,6 +32,15 @@ impl LabelMaker {
             root: Box::new(Node::new()),
             _failure_links_built: false,
         }
+    }
+
+    pub fn build(lookup: PatternMap) -> Self {
+        let mut labeler = LabelMaker::new();
+        for (pattern, label) in lookup {
+            labeler.insert(pattern.as_str(), label.as_str()).unwrap();
+        }
+        labeler.finalize();
+        labeler
     }
 
     pub fn insert(&mut self, pattern: &str, label: &str) -> Result<(), Box<dyn Error>> {
@@ -87,7 +98,6 @@ impl LabelMaker {
         longest_match_label
     }
 
-
     pub fn finalize(&mut self) {
         let root_ptr: *mut Node = &mut *self.root;
         let mut queue = VecDeque::new();
@@ -119,7 +129,6 @@ impl LabelMaker {
                         } else {
                             child.fail_link = Some(root_ptr);
                         }
-
 
                         queue.push_back(child.as_mut() as *mut Node);
                     }
@@ -168,10 +177,7 @@ mod test {
     #[should_panic]
     fn test_should_detect_conflict_due_to_duplicate_labels_for_same_pattern() {
         let mut labeler = super::LabelMaker::new();
-        let test_cases = vec![
-            ("rex", "T"),
-            ("rex", "Not-T")
-        ];
+        let test_cases = vec![("rex", "T"), ("rex", "Not-T")];
 
         for (pattern, label) in test_cases {
             labeler.insert(pattern, label).unwrap();
@@ -192,4 +198,3 @@ mod test {
         assert_eq!(result, "Many");
     }
 }
-
