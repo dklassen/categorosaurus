@@ -33,6 +33,10 @@ impl LabelMaker {
     }
 
     pub fn insert(&mut self, pattern: &str, label: &str) -> Result<(), Box<dyn Error>> {
+        if self._failure_links_built {
+            return Err("Cannot insert after finalizing".into());
+        }
+
         let mut node = &mut *self.root;
         for &byte in pattern.as_bytes() {
             let index = byte as usize;
@@ -58,7 +62,7 @@ impl LabelMaker {
 
     pub fn categorize(mut self, text: &str) -> Option<String> {
         if !self._failure_links_built {
-            self._build_failure_links();
+            panic!("Failure links not built yet. Call finalize() first.");
         }
 
         let mut node = &*self.root;
@@ -137,13 +141,37 @@ mod test {
         labeler.insert("Velociraptor", "Therapod").unwrap();
         labeler.insert("Brachiosaurus", "Saurapod").unwrap();
         labeler.insert("Patagotitan", "Saurapod").unwrap();
+        labeler.finalize();
+    }
+
+    #[test]
+    fn test_should_error_on_insert_after_finalize() {
+        let mut labeler = super::LabelMaker::new();
+        labeler.insert("Tyrannosaurus rex", "Therapod").unwrap();
+        labeler.insert("Velociraptor", "Therapod").unwrap();
+        labeler.insert("Brachiosaurus", "Saurapod").unwrap();
+        labeler.insert("Patagotitan", "Saurapod").unwrap();
+        labeler.finalize();
+
+        let result = labeler.insert("Triceratops", "Ceratopsian");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_should_panic_if_try_to_categorize_before_finalizing() {
+        let labeler = super::LabelMaker::new();
+        labeler.categorize("Tyrannosaurus rex").unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_should_detect_conflict_due_to_duplicate_labels_for_same_pattern() {
         let mut labeler = super::LabelMaker::new();
-        let test_cases = vec![("rex", "T"), ("rex", "Not-T")];
+        let test_cases = vec![
+            ("rex", "T"),
+            ("rex", "Not-T")
+        ];
 
         for (pattern, label) in test_cases {
             labeler.insert(pattern, label).unwrap();
@@ -155,6 +183,7 @@ mod test {
         let mut labeler = super::LabelMaker::new();
         labeler.insert("triceratop", "Single").unwrap();
         labeler.insert("triceratops", "Many").unwrap();
+        labeler.finalize();
 
         let text = "triceratops are a group of herbivorous ceratopsid dinosaurs";
         let result = labeler.categorize(text).unwrap();
