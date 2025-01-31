@@ -31,31 +31,41 @@ Here's a simple example of how to use Categorosaurus:
 use categorosaurus::LabelMaker;
 
 fn main() {
-    let mut category= LabelMaker::new();
-    labeler.insert("rawr", "Sad Noise").unwrap();
-    labeler.insert("rawrs", "Fossils Are Cool!").unwrap();
-    labeler.finalize();
+    let categories: super::PatternMap = HashMap::from([
+      ("Tyrannosaur".to_string(), "Therapod".to_string()),
+      ("Velociraptor".to_string(), "Therapod".to_string()),
+      ("Brachiosaurus".to_string(), "Saurapod".to_string()),
+      ("Patagotitan".to_string(), "Saurapod".to_string()),
+    ]);
 
-    // Classify text
-    let text = "The dinosaur that rawrs.";
-    let result = labeler.categorize(text).unwrap();
+    let categorosaurus = super::LabelMaker::build(categories);
 
+    let result = categorosaurus.categorize("Tyrannosaurus rex").unwrap();
+    
     println!("Category: {:?}", result);
 }
 ```
 
 Output:
-Category: ["Fossils Are Cool!"]
+Category: ["Therapod"]
 
 ### 📖 API Reference
 
-LabelMaker::new()
-Creates a new classifier.
+```rust
+let categories: PatternMap = HashMap::from([
+  ("Tyrannosaur".to_string(), "Therapod".to_string()),
+  ("Velociraptor".to_string(), "Therapod".to_string()),
+  ("Brachiosaurus".to_string(), "Saurapod".to_string()),
+  ("Patagotitan".to_string(), "Saurapod".to_string()),
+]);
 
-Adds a category with a pattern.
-LabelMaker::insert(pattern: &str, category: &str)
+LabelMaker::build(categories: PatternMap) -> LabelMaker
+```
+Creates a new classifier that is loaded and ready to go.
 
+```rust
 LabelMaker::categorize(text: &str) -> Option<String>
+```
 Returns a category, or not, for a given piece of text.
 
 ### 🔧 Development

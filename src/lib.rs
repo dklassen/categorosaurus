@@ -24,31 +24,28 @@ impl Node {
 
 pub struct LabelMaker {
     root: Box<Node>,
-    _failure_links_built: bool,
 }
 
 impl LabelMaker {
     fn new() -> Self {
         Self {
             root: Box::new(Node::new()),
-            _failure_links_built: false,
         }
     }
 
     pub fn build(lookup: PatternMap) -> Self {
         let mut labeler = LabelMaker::new();
         for (pattern, label) in lookup {
-            labeler.insert(pattern.as_str(), label.as_str()).unwrap();
+            labeler.insert(pattern.as_str(), label.as_str()).unwrap_or_else(|e| {
+                panic!("Failed to insert pattern: {}, label: {}. Error: {}", pattern, label, e)
+            });
         }
         labeler.finalize();
         labeler
     }
 
-    pub fn insert(&mut self, pattern: &str, label: &str) -> Result<(), Box<dyn Error>> {
-        if self._failure_links_built {
-            return Err("Cannot insert after finalizing".into());
-        }
-
+    fn insert(&mut self, pattern: &str, label: &str) -> Result<(), Box<dyn Error>> {
+        info!("Inserting pattern: {}, label: {}", pattern, label);
         let mut node = &mut *self.root;
         for &byte in pattern.as_bytes() {
             let index = byte as usize;
@@ -65,18 +62,15 @@ impl LabelMaker {
                     pattern, label, existing_label
                 )
                 .into());
-            }
+            } 
         }
+
         node.label = Some(label.to_string());
 
         Ok(())
     }
 
     pub fn categorize(&self, text: &str) -> Option<String> {
-        if !self._failure_links_built {
-            panic!("Failure links not built yet. Call finalize() first.");
-        }
-
         let mut node = &*self.root;
         let mut longest_match_label: Option<String> = None;
 
@@ -99,7 +93,7 @@ impl LabelMaker {
         longest_match_label
     }
 
-    pub fn finalize(&mut self) {
+    fn finalize(&mut self) {
         let root_ptr: *mut Node = &mut *self.root;
         let mut queue = VecDeque::new();
 
@@ -136,66 +130,40 @@ impl LabelMaker {
                 }
             }
         }
-
-        self._failure_links_built = true;
     }
 }
 
+
 #[cfg(test)]
 mod test {
+    use test_log::test;
+    use std::collections::HashMap;
 
     #[test]
     fn test_should_allow_happy_insert() {
-        let mut labeler = super::LabelMaker::new();
-        labeler.insert("Tyrannosaurus rex", "Therapod").unwrap();
-        labeler.insert("Velociraptor", "Therapod").unwrap();
-        labeler.insert("Brachiosaurus", "Saurapod").unwrap();
-        labeler.insert("Patagotitan", "Saurapod").unwrap();
-        labeler.finalize();
-    }
+        let categories: super::PatternMap = HashMap::from([
+            ("Tyrannosaurus rex".to_string(), "Therapod".to_string()),
+            ("Velociraptor".to_string(), "Therapod".to_string()),
+            ("Brachiosaurus".to_string(), "Saurapod".to_string()),
+            ("Patagotitan".to_string(), "Saurapod".to_string()),
+        ]);
+        let categorosaurus = super::LabelMaker::build(categories);
 
-    #[test]
-    fn test_should_error_on_insert_after_finalize() {
-        let mut labeler = super::LabelMaker::new();
-        labeler.insert("Tyrannosaurus rex", "Therapod").unwrap();
-        labeler.insert("Velociraptor", "Therapod").unwrap();
-        labeler.insert("Brachiosaurus", "Saurapod").unwrap();
-        labeler.insert("Patagotitan", "Saurapod").unwrap();
-        labeler.finalize();
-
-        let result = labeler.insert("Triceratops", "Ceratopsian");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_should_panic_if_try_to_categorize_before_finalizing() {
-        let labeler = super::LabelMaker::new();
-        labeler.categorize("Tyrannosaurus rex").unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_should_detect_conflict_due_to_duplicate_labels_for_same_pattern() {
-        let mut labeler = super::LabelMaker::new();
-        let test_cases = vec![("rex", "T"), ("rex", "Not-T")];
-
-        for (pattern, label) in test_cases {
-            labeler.insert(pattern, label).unwrap();
-        }
+        let result = categorosaurus.categorize("Tyrannosaurus rex").unwrap();
+        assert_eq!(result, "Therapod");
     }
 
     #[test]
     fn test_should_find_longest_pattern_and_return_label() {
-        let mut labeler = super::LabelMaker::new();
-        labeler.insert("triceratop", "Single").unwrap();
-        labeler.insert("triceratops", "Many").unwrap();
-        labeler.finalize();
+        let categories: super::PatternMap = HashMap::from([
+            ("triceratop".to_string(), "Single".to_string()),
+            ("triceratops".to_string(), "Many".to_string()),
+        ]);
+
+        let categorosaurus = super::LabelMaker::build(categories);
 
         let text = "triceratops are a group of herbivorous ceratopsid dinosaurs";
-        let result = labeler.categorize(text).unwrap();
-        println!("Result: {}", result);
-
+        let result = categorosaurus.categorize(text).unwrap();
         assert_eq!(result, "Many");
     }
 }
